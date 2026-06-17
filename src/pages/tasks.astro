@@ -1,0 +1,169 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="TaskFlow - Tareas">
+  <div class="container" id="app">
+    <header>
+      <h1>TaskFlow</h1>
+      <button id="logoutBtn">Cerrar sesión</button>
+    </header>
+
+    <h2>Agregar tarea</h2>
+    
+    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+      <input
+        type="text"
+        id="tituloInput"
+        placeholder="Título"
+      />
+      
+      <select id="categoriaSelect">
+        <option value="Personal">Personal</option>
+        <option value="Trabajo">Trabajo</option>
+        <option value="Estudio">Estudio</option>
+      </select>
+      
+      <button id="addBtn">Agregar</button>
+    </div>
+
+    <hr />
+
+    <div style="display: flex; justify-content: space-between; margin: 1rem 0;">
+      <p>Pendientes: <span id="pendientesCount">0</span></p>
+      <p>Completadas: <span id="completadasCount">0</span></p>
+    </div>
+
+    <div id="taskList"></div>
+
+    <br />
+    <a href="/dashboard">Ver Dashboard</a>
+  </div>
+
+  <script>
+    // Definir tipos
+    interface Task {
+      id: number;
+      titulo: string;
+      categoria: string;
+      completada: boolean;
+      fechaCreacion: string;
+    }
+
+    // Estado
+    let tasks: Task[] = JSON.parse(localStorage.getItem("tasks") || "[]");
+
+    // Elementos DOM con casting de tipo
+    const taskList = document.getElementById('taskList') as HTMLDivElement | null;
+    const tituloInput = document.getElementById('tituloInput') as HTMLInputElement | null;
+    const categoriaSelect = document.getElementById('categoriaSelect') as HTMLSelectElement | null;
+    const addBtn = document.getElementById('addBtn') as HTMLButtonElement | null;
+    const logoutBtn = document.getElementById('logoutBtn') as HTMLButtonElement | null;
+    const pendientesSpan = document.getElementById('pendientesCount') as HTMLSpanElement | null;
+    const completadasSpan = document.getElementById('completadasCount') as HTMLSpanElement | null;
+
+    // Verificar que todos los elementos existan
+    if (!taskList || !tituloInput || !categoriaSelect || !addBtn || !logoutBtn || !pendientesSpan || !completadasSpan) {
+      console.error('Elementos del DOM no encontrados');
+    }
+
+    // Renderizar tareas
+    function renderTasks(): void {
+      if (!taskList || !pendientesSpan || !completadasSpan) return;
+
+      const pendientes = tasks.filter(t => !t.completada).length;
+      const completadas = tasks.filter(t => t.completada).length;
+      
+      pendientesSpan.textContent = pendientes.toString();
+      completadasSpan.textContent = completadas.toString();
+
+      if (tasks.length === 0) {
+        taskList.innerHTML = '<p style="text-align: center; color: #666;">No hay tareas</p>';
+        return;
+      }
+
+      taskList.innerHTML = tasks.map(task => `
+        <div class="task-item" data-id="${task.id}">
+          <input 
+            type="checkbox" 
+            ${task.completada ? 'checked' : ''}
+            onchange="toggleTask(${task.id})"
+          />
+          <span style="text-decoration: ${task.completada ? 'line-through' : 'none'}">
+            ${task.titulo} (${task.categoria})
+          </span>
+          <button onclick="deleteTask(${task.id})">Eliminar</button>
+        </div>
+      `).join('');
+    }
+
+    // Funciones globales
+    (window as any).toggleTask = function(id: number): void {
+      tasks = tasks.map(task =>
+        task.id === id
+          ? { ...task, completada: !task.completada }
+          : task
+      );
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+      renderTasks();
+    };
+
+    (window as any).deleteTask = function(id: number): void {
+      if (confirm("¿Eliminar esta tarea?")) {
+        tasks = tasks.filter(task => task.id !== id);
+        localStorage.setItem("tasks", JSON.stringify(tasks));
+        renderTasks();
+      }
+    };
+
+    // Agregar tarea
+    if (addBtn && tituloInput && categoriaSelect) {
+      addBtn.addEventListener('click', () => {
+        const titulo = tituloInput.value.trim();
+        if (!titulo) return;
+
+        const newTask: Task = {
+          id: Date.now(),
+          titulo,
+          categoria: categoriaSelect.value,
+          completada: false,
+          fechaCreacion: new Date().toISOString(),
+        };
+
+        tasks = [...tasks, newTask];
+        localStorage.setItem("tasks", JSON.stringify(tasks));
+        tituloInput.value = '';
+        renderTasks();
+      });
+    }
+
+    // Enter en el input
+    if (tituloInput && addBtn) {
+      tituloInput.addEventListener('keypress', (e: KeyboardEvent) => {
+        if (e.key === 'Enter') {
+          addBtn.click();
+        }
+      });
+    }
+
+    // Cerrar sesión
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem("isAuthenticated");
+        window.location.href = "/login";
+      });
+    }
+
+    // Verificar autenticación
+    function checkAuth(): void {
+      const isAuthenticated = localStorage.getItem("isAuthenticated");
+      if (!isAuthenticated) {
+        window.location.href = "/login";
+      }
+    }
+
+    // Inicializar
+    checkAuth();
+    renderTasks();
+  </script>
+</Layout>

@@ -1,0 +1,61 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="TaskFlow - Iniciar Sesión">
+  <div class="container" id="app">
+    <h1>TaskFlow</h1>
+    
+    <form id="loginForm">
+      <input
+        type="email"
+        id="email"
+        placeholder="Correo electrónico"
+        value="usuario@ejemplo.com"
+        required
+      />
+      
+      <input
+        type="password"
+        id="password"
+        placeholder="Contraseña"
+        value="123456"
+        required
+      />
+      
+      <button type="submit">
+        Iniciar sesión
+      </button>
+      
+      <p id="error" class="error" style="display: none;">
+        Credenciales incorrectas
+      </p>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById('loginForm') as HTMLFormElement | null;
+    const emailInput = document.getElementById('email') as HTMLInputElement | null;
+    const passwordInput = document.getElementById('password') as HTMLInputElement | null;
+    const errorElement = document.getElementById('error') as HTMLParagraphElement | null;
+
+    if (form && emailInput && passwordInput && errorElement) {
+      form.addEventListener('submit', (e: Event) => {
+        e.preventDefault();
+        
+        const email = emailInput.value;
+        const password = passwordInput.value;
+        
+        if (email === "usuario@ejemplo.com" && password === "123456") {
+          localStorage.setItem("isAuthenticated", "true");
+          window.location.href = "/tasks";
+        } else {
+          errorElement.style.display = 'block';
+          setTimeout(() => {
+            errorElement.style.display = 'none';
+          }, 3000);
+        }
+      });
+    }
+  </script>
+</Layout>
